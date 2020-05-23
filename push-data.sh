@@ -3,6 +3,7 @@
 GIT=`which git`
 REPO_DIR=$(pwd)/psi-data
 cd ${REPO_DIR}
+${GIT} checkout master
 ${GIT} pull
 ${GIT} add --all .
 ${GIT} commit -m "Updating data"

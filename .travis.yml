@@ -15,4 +15,4 @@ install:
   - docker build -t "psi-runner" .
 after_success:
   - docker run --mount "type=bind,src=$(pwd)/psi-data,dst=/psi-runner/psi-data" --user "$(id -u):$(id -g)" psi-runner
-  - ./push-data.sh
+  - bash push-data.sh
