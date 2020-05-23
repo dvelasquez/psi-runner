@@ -1,0 +1,18 @@
+sudo: false
+os: linux
+language: nodejs
+services:
+  - docker
+git:
+  submodules: false
+before_install:
+  - git config --global user.email "danilo.velasquez@gmail.com"
+  - git config --global user.name "Danilo Velasquez"
+  - git remote set-url origin "https://dvelasquez:${GITHUB_PERSONAL_API_TOKEN}@github.com/dvelasquez/psi-runner.git" > /dev/null 2>&1
+  - git config submodule.psi-data.url "https://dvelasquez:${GITHUB_PERSONAL_API_TOKEN}@github.com/dvelasquez/psi-data.git" > /dev/null 2>&1
+  - git submodule update --init --recursive
+install:
+  - docker build -t "psi-runner" .
+after_success:
+  - docker run --mount "type=bind,src=$(pwd)/psi-data,dst=/psi-runner/psi-data" --user "$(id -u):$(id -g)" psi-runner
+  - ./push-data.sh

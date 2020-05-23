@@ -1,0 +1,3 @@
+[submodule "psi-data"]
+	path = psi-data
+	url = git@github.com:dvelasquez/psi-data.git
