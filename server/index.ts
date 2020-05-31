@@ -4,6 +4,22 @@ import { writeReport } from './services/write-report'
 import { performance } from 'perf_hooks'
 import Bluebird from 'bluebird'
 import chalk from 'chalk'
+import express from 'express'
+import shell from 'shelljs'
+const app = express()
+
+const ITERATIVE_EXECUTION = process.env.ITERATIVE_EXECUTION || ''
+const PORT = process.env.PORT || 8080
+let iteration = 1
+let lastExecutionDate = new Date()
+
+app.get('/', (req, res) => {
+  res.send(`Iteration number ${iteration} at ${lastExecutionDate.toISOString()}`)
+})
+
+app.listen(PORT, () => {
+  console.log(chalk.green(`App running at port ${PORT}`))
+})
 
 const analyseUrl = async (url: UrlObject): Promise<any> => {
   const executionDate = Date.now()
@@ -29,8 +45,22 @@ const main = async (): Promise<void> => {
     process.exit(1)
   } finally {
     console.info(chalk.green(`EXECUTION TIME: ${time}`))
-    process.exit(0)
+    !ITERATIVE_EXECUTION && process.exit(0)
   }
 }
 
-main()
+main().then(() => {
+  if (ITERATIVE_EXECUTION) {
+    shell.exec('./push-data-from-docker.sh')
+  }
+})
+
+if (ITERATIVE_EXECUTION) {
+  setInterval(async () => {
+    lastExecutionDate = new Date()
+    console.log(chalk.bgRed(chalk.black(`Running iterative process at ${lastExecutionDate.toISOString()}`)))
+    await main()
+    shell.exec('./push-data-from-docker.sh')
+    iteration++
+  }, 1800000)
+}
