@@ -1,6 +1,6 @@
 import { urlList, UrlObject } from './services/url-list'
 import { executePSI } from './services/execute-psi'
-import { writeReport } from './services/write-report'
+import { writeReport, writeReportToS3 } from './services/write-report'
 import { performance } from 'perf_hooks'
 import Bluebird from 'bluebird'
 import chalk from 'chalk'
@@ -9,6 +9,7 @@ import shell from 'shelljs'
 const app = express()
 
 const ITERATIVE_EXECUTION = process.env.ITERATIVE_EXECUTION || ''
+const AWS_PUBLISH = process.env.AWS_PUBLISH || ''
 const PORT = process.env.PORT || 8080
 let iteration = 1
 let lastExecutionDate = new Date()
@@ -28,7 +29,10 @@ const analyseUrl = async (url: UrlObject): Promise<any> => {
     executionDate,
     result: await executePSI(url)
   }
-  await writeReport(`psi-data/reports/${url.name}/${url.page}/${executionDate}.json`, result)
+  await Promise.all([
+    writeReport(`psi-data/reports/${url.name}/${url.page}/${executionDate}.json`, result),
+    AWS_PUBLISH && writeReportToS3(`psi-data/reports/${url.name}/${url.page}/${executionDate}.json`, result)
+  ])
   return result
 }
 
@@ -51,7 +55,7 @@ const main = async (): Promise<void> => {
 
 main().then(() => {
   if (ITERATIVE_EXECUTION) {
-    shell.exec('./push-data-from-docker.sh')
+    !AWS_PUBLISH && shell.exec('./push-data-from-docker.sh')
   }
 })
 
@@ -60,7 +64,7 @@ if (ITERATIVE_EXECUTION) {
     lastExecutionDate = new Date()
     console.log(chalk.bgRed(chalk.black(`Running iterative process at ${lastExecutionDate.toISOString()}`)))
     await main()
-    shell.exec('./push-data-from-docker.sh')
+    !AWS_PUBLISH && shell.exec('./push-data-from-docker.sh')
     iteration++
   }, 1800000)
 }
