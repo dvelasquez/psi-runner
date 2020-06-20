@@ -41,7 +41,9 @@ const main = async (): Promise<void> => {
   const time = performance.now()
   try {
     await Bluebird.mapSeries(urlList, (url) => {
-      return analyseUrl(url)
+      setTimeout(() => {
+        return analyseUrl(url)
+      }, 2000)
     })
   } catch (error) {
     console.info(chalk.red(`EXECUTION FAILED`))
